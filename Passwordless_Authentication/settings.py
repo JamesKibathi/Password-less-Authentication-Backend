@@ -124,4 +124,4 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Register newly created model
-AUTH_USER_MODEL = 'auth_app.User'
+AUTH_USER_MODEL = 'verify.User'
