@@ -16,12 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from verify.views import register,login,verify_magic_link
+from verify.views import register,login,verify_otp,verify_magic_link
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('register/', register, name='register'),
     path('login/', login, name='login'),
+    path('verify-otp/', verify_otp, name='verify_otp'),
     path('verify-magic-link/', verify_magic_link, name='verify_magic_link'),
+    
    
 ]

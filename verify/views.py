@@ -174,4 +174,35 @@ def verify_magic_link(request):
             return JsonResponse({'status': 'error', 'message': 'Invalid token'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Token is required'})
+    
+    
+# OTP Verification
+@csrf_exempt
+def verify_otp(request):
+    if request.method == 'POST':
+        otp = request.POST.get('otp')
+
+        try:
+            user = User.objects.get(last_otp=otp)
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid OTP'})
+
+        # Check if the OTP has expired
+        if user.otp_expiry and user.otp_expiry < timezone.now():
+            return JsonResponse({'status': 'error', 'message': 'OTP has expired'})
+
+        # OTP verification successful
+        # Generate JWT
+        payload = {
+            'username': user.username,
+            'phone_number': user.phone_number,
+            'email': user.email,
+            'last_otp': user.last_otp  # Add last_otp field
+        }
+        jwt_token = jwt.encode(payload, JWT_SECRET_KEY)
+
+        return JsonResponse({'status': 'success', 'jwt_token': jwt_token})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+    
            
