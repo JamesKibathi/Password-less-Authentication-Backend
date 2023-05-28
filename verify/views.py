@@ -164,16 +164,16 @@ def verify_magic_link(request):
     token = request.GET.get('token')
     if token:
         try:
-            decoded_token = jwt.decode(token, settings.SECRET_KEY)
+            decoded_token = jwt.decode(token, settings.JWT_SECRET_KEY )
             user_id = decoded_token.get('user_id')
             user = User.objects.get(id=user_id)
 
             # Generate JWT access token
-            access_token = jwt.encode({'user_id': user_id}, settings.SECRET_KEY, algorithm='HS256')
+            access_token = jwt.encode({'user_id': user_id}, settings.JWT_SECRET_KEY, algorithm='HS256')
 
             # Redirect to the frontend dashboard route with the access token as a query parameter
             # frontend_dashboard_url = f'http://my-frontend.com/dashboard?token={access_token}'
-            frontend_dashboard_url = f'https://www.google.com'
+            frontend_dashboard_url = f'https://www.google.com?token={access_token}'
             return redirect(frontend_dashboard_url)
         except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
             return JsonResponse({'status': 'error', 'message': 'Invalid token'})
