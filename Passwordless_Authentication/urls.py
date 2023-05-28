@@ -16,7 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from verify.views import register,verify_magic_link
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('register/', register, name='register'),
+    path('verify-magic-link/', verify_magic_link, name='verify_magic_link'),
 ]
