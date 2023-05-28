@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import authenticate, login
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.decorators import api_view
 
 
@@ -16,7 +18,7 @@ from datetime import datetime, timedelta
 from tokenize import generate_tokens
 from django.utils.timezone import now
 from django.utils import timezone
-from django.shortcuts import render
+from django.shortcuts import redirect
 from .models import User
 from django.db.models import Q
 from django.core.mail import send_mail
@@ -167,15 +169,43 @@ def verify_magic_link(request):
             user = User.objects.get(id=user_id)
 
             # Generate JWT access token
-            access_token = AccessToken.for_user(user)
+            access_token = jwt.encode({'user_id': user_id}, settings.SECRET_KEY, algorithm='HS256')
 
-            return JsonResponse({'status': 'success', 'access_token': str(access_token)})
+            # Redirect to the frontend dashboard route with the access token as a query parameter
+            # frontend_dashboard_url = f'http://my-frontend.com/dashboard?token={access_token}'
+            frontend_dashboard_url = f'https://www.google.com'
+            return redirect(frontend_dashboard_url)
+        except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
+            return JsonResponse({'status': 'error', 'message': 'Invalid token'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Token is required'})
+
+"""
+@api_view(['GET'])
+def verify_magic_link(request):
+    token = request.GET.get('token')
+    if token:
+        try:
+            decoded_token = jwt.decode(token, settings.SECRET_KEY)
+            user_id = decoded_token.get('user_id')
+            user = User.objects.get(id=user_id)
+            
+             # Log in the user
+            user = authenticate(request, username=user.email, password=None)
+            if user is not None:
+                login(request, user)
+                # Generate JWT access token
+                access_token = AccessToken.for_user(user)
+
+                return JsonResponse({'status': 'success', 'access_token': str(access_token)})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Invalid user credentials'})
         except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
             return JsonResponse({'status': 'error', 'message': 'Invalid token'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Token is required'})
     
-    
+    """
 # OTP Verification
 @csrf_exempt
 def verify_otp(request):
