@@ -1,21 +1,11 @@
 #Import Dependencies
 
-
 from django.contrib.auth.models import User
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth import authenticate, login
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.decorators import api_view
-
-
+from django.core.serializers import serialize
 from django.conf import settings
-
-
-
 from datetime import datetime, timedelta
-from tokenize import generate_tokens
 from django.utils.timezone import now
 from django.utils import timezone
 from django.shortcuts import redirect
@@ -24,11 +14,7 @@ from django.db.models import Q
 from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.sessions.backends.db import SessionStore
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth import get_user_model
 from django.contrib.sites.shortcuts import get_current_site
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.core.mail import send_mail
 from twilio.rest import Client
@@ -37,7 +23,7 @@ import random
 import os
 from dotenv import load_dotenv
 
-# Create your views here.
+#Views begin here.
 
 # Load environment variables from .env file
 load_dotenv()
@@ -74,11 +60,20 @@ def register(request):
             from_=TWILIO_PHONE_NUMBER,
             to=phone_number
         )
+         # Generate JWT token
+        payload = {
+                'user_id': user.pk,
+                'username': user.username,
+                'email':user.email,
+                'phone':user.phone_number
+                
+    
+            }
+        token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+            
         # Generate magic link URL
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(str(user.pk)))
         current_site = get_current_site(request)
-        magic_link_url = f'http://{current_site.domain}{reverse("verify_magic_link")}?uid={uid}&token={token}'
+        magic_link_url = f'http://{current_site.domain}{reverse("verify_magic_link")}?token={token}'
 
         # Send OTP and verification URL to the user's email
         send_mail(
@@ -124,18 +119,21 @@ def login(request):
                 to=user.phone_number
             )
         elif method == 'email':
-            # Generate token for magic link
-            token = default_token_generator.make_token(user)
             
-            # Build the magic link URL
-            # current_site = get_current_site(request)
-            # relative_url = reverse('verify', args=[username, token])
-            # magic_link = f'http://{current_site.domain}{relative_url}'
+            # Generate JWT token
+            payload = {
+                'user_id': user.pk,
+                'username': user.username,
+                'email':user.email,
+                'phone':user.phone_number
+                
+    
+            }
+            token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
             
              # Generate magic link URL
-            uid = urlsafe_base64_encode(force_bytes(str(user.pk)))
             current_site = get_current_site(request)
-            magic_link_url = f'http://{current_site.domain}{reverse("verify_magic_link")}?uid={uid}&token={token}'
+            magic_link_url = f'http://{current_site.domain}{reverse("verify_magic_link")}?token={token}'
                 
             # Send OTP and verification URL to the user's email
             send_mail(
@@ -164,48 +162,26 @@ def verify_magic_link(request):
     token = request.GET.get('token')
     if token:
         try:
-            decoded_token = jwt.decode(token, settings.JWT_SECRET_KEY )
+            decoded_token = jwt.decode(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
             user_id = decoded_token.get('user_id')
             user = User.objects.get(id=user_id)
-
+            
+            #serialized_user = serialize('json', [user])  
+    
             # Generate JWT access token
-            access_token = jwt.encode({'user_id': user_id}, settings.JWT_SECRET_KEY, algorithm='HS256')
-
+            access_token = jwt.encode({'user_id': user.id}, settings.JWT_SECRET_KEY, algorithm='HS256')
             # Redirect to the frontend dashboard route with the access token as a query parameter
             # frontend_dashboard_url = f'http://my-frontend.com/dashboard?token={access_token}'
             frontend_dashboard_url = f'https://www.google.com?token={access_token}'
             return redirect(frontend_dashboard_url)
+            #return JsonResponse({'user': access_token})
         except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
             return JsonResponse({'status': 'error', 'message': 'Invalid token'})
     else:
-        return JsonResponse({'status': 'error', 'message': 'Token is required'})
-
-"""
-@api_view(['GET'])
-def verify_magic_link(request):
-    token = request.GET.get('token')
-    if token:
-        try:
-            decoded_token = jwt.decode(token, settings.SECRET_KEY)
-            user_id = decoded_token.get('user_id')
-            user = User.objects.get(id=user_id)
-            
-             # Log in the user
-            user = authenticate(request, username=user.email, password=None)
-            if user is not None:
-                login(request, user)
-                # Generate JWT access token
-                access_token = AccessToken.for_user(user)
-
-                return JsonResponse({'status': 'success', 'access_token': str(access_token)})
-            else:
-                return JsonResponse({'status': 'error', 'message': 'Invalid user credentials'})
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
-            return JsonResponse({'status': 'error', 'message': 'Invalid token'})
-    else:
-        return JsonResponse({'status': 'error', 'message': 'Token is required'})
+        return JsonResponse({'status': 'error', 'message': 'Token is required'})    
     
-    """
+   
+   
 # OTP Verification
 @csrf_exempt
 def verify_otp(request):
