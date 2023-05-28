@@ -1,1 +1,5 @@
 pip install django twilio
+
+Testing endpoints
+1. /register/ - {"username":"name","email":"example@mail.com,"phone_number":"+2547XXXXX"}
+2. /login/ -{"identifier":"example@mail.com"}
