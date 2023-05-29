@@ -172,7 +172,7 @@ def verify_magic_link(request):
             access_token = jwt.encode({'user_id': user.id}, settings.JWT_SECRET_KEY, algorithm='HS256')
             # Redirect to the frontend dashboard route with the access token as a query parameter
             # frontend_dashboard_url = f'http://my-frontend.com/dashboard?token={access_token}'
-            frontend_dashboard_url = f'https://www.google.com?token={access_token}'
+            frontend_dashboard_url = f'http://localhost:3000/dashboard?token={access_token}'
             return redirect(frontend_dashboard_url)
             #return JsonResponse({'user': access_token})
         except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
