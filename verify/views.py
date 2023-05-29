@@ -181,7 +181,7 @@ def verify_magic_link(request):
         return JsonResponse({'status': 'error', 'message': 'Token is required'})    
     
    
-   
+"""
 # OTP Verification
 @csrf_exempt
 def verify_otp(request):
@@ -211,4 +211,45 @@ def verify_otp(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
     
+           """
+
+
+
+@csrf_exempt
+def verify_otp(request):
+    if request.method == 'POST':
+        otp = request.POST.get('otp')
+        # user = User.objects.get(last_otp=otp)
+        
+        # serialized_user = serialize('json', [user])
+     
+        # return JsonResponse({'user': serialized_user})
+        
+
+        try:
+            user = User.objects.get(last_otp=otp)
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid OTP'})
+
+        # Check if the OTP has expired
+        if user.otp_expiry and user.otp_expiry < timezone.now():
+            return JsonResponse({'status': 'error', 'message': 'OTP has expired'})
+
+        # Check if the provided OTP matches the last OTP stored in the user model
+        # if otp != user.last_otp:
+        #     return JsonResponse({'status': 'error', 'message': 'Invalid OTP'})
+
+        # OTP verification successful
+        # Generate JWT
+        payload = {
+            'username': user.username,
+            'phone_number': user.phone_number,
+            'email': user.email,
+            'last_otp': user.last_otp  # Add last_otp field
+        }
+        jwt_token = jwt.encode(payload, JWT_SECRET_KEY)
+
+        return JsonResponse({'status': 'success', 'jwt_token': jwt_token})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
            
