@@ -1,0 +1,17 @@
+pip install django 
+pip install twilio
+pip install django-cors-headers
+pip install djangorestframework
+pip install djangorestframework_simplejwt
+
+
+Testing endpoints
+1. /register/ - {"username":"name","email":"example@mail.com,"phone_number":"+2547XXXXX"}
+2. /login/ -{"identifier":"example@mail.com"}
+3. /verify-otp - {"otp": "123456"}
+
+
+
+
+
+
