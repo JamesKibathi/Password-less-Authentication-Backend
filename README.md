@@ -66,7 +66,7 @@ $ python3 migrate
   POST "/register/"
 
   # user Login
-  GET "/login/
+  POST "/login/
 
   # OTP verification
   POST "/verify-otp/"
